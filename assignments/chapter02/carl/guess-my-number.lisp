@@ -1,0 +1,5 @@
+(defparameter *small* 1)
+(defparameter *big* 100)
+(defun guess-my-number ()
+   (ash (+ *small* *big*) -1))
+(guess-my-number)
