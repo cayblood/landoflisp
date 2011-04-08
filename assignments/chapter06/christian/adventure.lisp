@@ -64,7 +64,6 @@
 	(cons 'items- (objects-at 'body *objects* *object-locations*)))
 
 ;; Game repl
-
 (defparameter *allowed-commands* '(look walk pickup inventory))
 	
 (defun game-repl ()
@@ -91,7 +90,7 @@
 				  ((member item '(#\! #\? #\.)) (cons item (tweak-text rest t is-literal)))
 				  ((eq item #\") 				(tweak-text rest is-capital (not is-literal)))
 				  (is-literal 					(cons item (tweak-text rest nil is-literal)))			  
-				  (is-capital 					(cons (char-upcase item) (tweak-text rest nil is-literal)))  ;; Removed redundant or
+				  (is-capital					(cons (char-upcase item) (tweak-text rest nil is-literal)))  ;; Removed redundant or
 				  (t (cons (char-downcase item) (tweak-text rest nil nil)))))))
 			  
 (defun game-print (output)
