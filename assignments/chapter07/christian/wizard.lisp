@@ -47,3 +47,41 @@
 	(nodes->dot nodes)
 	(edges->dot edges)
 	(princ "}"))
+	
+(defun dot->png (filename thunk)
+	(with-open-file 
+		(*standard-output*
+		 filename
+		 :direction :output
+		 :if-exists :supersede)
+		(funcall thunk))
+	(ext:shell (concatenate 'string "dot -Tpng -O " filename)))
+	
+(defun graph->png (filename nodes edges)
+	(dot->png filename (lambda () (graph->dot nodes edges))))
+	
+
+;; Undirected graph 
+
+(defun uedges->dot (edges)
+	(maplist 	(lambda (lst)
+					(mapc 	(lambda (edge)
+								(unless (assoc (car edge) (cdr lst))
+									(fresh-line)
+									(princ (dot-name (caar lst)))
+									(princ "--")
+									(princ (dot-name (car edge)))
+									(princ "[label=\"")
+									(princ (dot-label (cddr edge)))  ;; changed to cddr since having the direction in a ugraph didn't make sense
+									(princ "\"];")))
+							(cdar lst)))
+				edges))
+
+(defun ugraph->dot (nodes edges)
+	(princ "graph{")
+	(nodes->dot nodes)
+	(uedges->dot edges)
+	(princ "}"))
+	
+(defun ugraph->png (filename nodes edges)
+	(dot->png filename (lambda () (ugraph->dot nodes edges))))
