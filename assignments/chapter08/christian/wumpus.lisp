@@ -87,13 +87,17 @@
 (defun neighbors (node edge-alist)
 	(mapcar #'car (cdr (assoc node edge-alist))))
 	
-(defun within-one (a b edge-alist)
-	(member b (neighbors a edge-alist)))
+(defun within-one (node target edge-alist)
+	(member target (neighbors node edge-alist)))
 	
-(defun within-two (a b edge-alist)
-	(or (within-one a b edge-alist)
-		(some (lambda (x) (within-one x b edge-alist))
-			  (neighbors a edge-alist))))
+(defun within-two (node target edge-alist)
+	(or (within-one node target edge-alist)
+		(some (lambda (neighbor-node) (within-one neighbor-node target edge-alist))
+			  (neighbors node edge-alist))))
+
+;;(defun within-n (node target edge-alist)
+;;	(or (within-one node target edge-alist)
+;;		(
 			  
 (defun find-empty-node ()
 	(let ((x (random-node)))
@@ -109,13 +113,13 @@
 		(loop for n from 1 to *node-num*
 			  collect (append (list n)
 							  (cond ((eql n wumpus) '(wumpus))
-									((within-two n wumpus edge-alist) '(blood!)))
+									((within-two n wumpus edge-alist) 
+										'(blood!)))
 							  (cond ((member n glow-worms) '(glow-worm))
-									((some (lambda (worm) (within-one n worm edge-alist))
-										   glow-worms)
+									((some (lambda (worm) (within-one n worm edge-alist)) glow-worms)
 										'(lights!)))
 							  (when (some #'cdr (cdr (assoc n edge-alist)))
-								'(sirens!))))))
+										'(sirens!))))))
 
 ;; Game initialization
 (defun new-game ()
