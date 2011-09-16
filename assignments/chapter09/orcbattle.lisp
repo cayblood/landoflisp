@@ -139,7 +139,8 @@
 		(if (is-available-monster-index x)
 			(let ((m (aref *monsters* (1- x))))
 				(if (monster-dead m)
-					(progn (princ "That monster is already dead.")
+					(progn 
+						(princ "That monster is already dead.")
 						(pick-monster))
 					m))
 			(progn (princ "That is not a valid monster number.")
@@ -148,21 +149,109 @@
 (defun is-available-monster-index (x)
 	(and (integerp x) (>= x 1) (<= x *monster-num*)))
 
-;; MONSTERS
+;; MONSTERS!!
+	
+;; Generic monster
 (defstruct monster (health (randval 10)))
 
 (defmethod monster-hit (m dmg)
 	(decf (monster-health m) dmg)
 	(if (monster-dead m)
+		(display-monster-kill m)
+		(display-monster-hit m dmg)))
+
+(defmethod monster-show (m)
+	(princ "A fierce ")
+	(princ (type-of m)))
+	
+(defmethod monster-attack (m))
+		
+(defun display-monster-kill (m)
+	(princ "You killed the ")
+	(princ (type-of m))
+	(princ "! "))
+
+(defun display-monster-hit (m dmg)
+	(princ "You hit the ")
+	(princ (type-of m))
+	(princ ", knocking off ")
+	(princ dmg)
+	(princ " health points! "))
+
+;; Orc
+(defstruct (orc (:include monster)) (club-level (randval 8)))
+(push #'make-orc *monster-builders*)
+
+(defmethod monster-show ((m orc))
+	(princ "A wicked orc with a level ")
+	(princ (orc-club-level m))
+	(princ " club"))
+	
+(defmethod monster-attack ((m orc))
+	(let ((dmg (randval (orc-club-level m))))
+		(princ "An orc swings his club at you and knocks off ")
+		(princ dmg)
+		(princ " of your health points. ")
+		(decf *player-health* dmg)))
+		
+;; Hydra
+(defstruct (hydra (:include monster)))
+(push #'make-hydra *monster-builders*)
+
+(defmethod monster-show ((m hydra))
+	(princ "A malicious hydra with ")
+	(princ (monster-health m))
+	(princ " heads."))
+
+(defmethod monster-hit ((m hydra) dmg)
+	(decf (monster-health m) dmg)
+	(if (monster-dead m)
+		(princ "The corpse of the fully decapitated and decapacitated hydra falls to the floor!")
 		(progn
-			(princ "You killed the ")
-			(princ (type-of m))
-			(princ "! "))
-		(progn
-			(princ "You hit the ")
-			(princ (type-of m))
-			(princ ", knocking off ")
+			(princ "You lop off ")
 			(princ dmg)
-			(princ " health points! "))))
+			(princ " off the hydra's heads! "))))
+			
+(defmethod monster-attack ((m hydra))
+	(let ((num-of-heads (randval (ash (monster-health m) -1))))
+		(princ "A hydra attacks you with ")
+		(princ num-of-heads)
+		(princ " of its heads! It also grows back one more head! ")
+		(incf (monster-health m))
+		(decf *player-health* num-of-heads)))
 		
-		
+;; Slimy slime mold
+(defstruct (slime-mold (:include monster)) (sliminess (randval 5)))
+(push #'make-slime-mold *monster-builders*)
+
+(defmethod monster-show ((m slime-mold))
+	(princ "A slime mold with a sliminess of ")
+	(princ (slime-mold-sliminess m)))
+	
+(defmethod monster-attack ((m slime-mold))
+	(let ((sliminess (randval (slime-mold-sliminess m))))
+		(princ "A slime mold wraps around your legs and decreases your agility by ")
+		(princ sliminess)
+		(princ "! ")
+		(decf *player-agility* sliminess)
+		(when (zerop (random 2))
+			(princ "It also squirts in your face, taking away a health point! ")
+			(decf *player-health*))))
+			
+;; Cunning brigand
+(defstruct (brigand (:include monster)))
+(push #'make-brigand *monster-builders*)
+
+(defmethod monster-attack ((m brigand))
+	(let ((target-stat-value (max *player-health* *player-agility* *player-strength*)))
+		(cond 
+			((= target-stat-value *player-health*)
+				(princ "A brigand hits you with his slingshot, taking off 2 health points! ")
+				(decf *player-health* 2))
+			((= target-stat-value *player-agility*)
+				(princ "A brigand catches your leg with his whip, taking off 2 agility points! ")
+				(decf *player-agility* 2))
+			((= target-stat-value *player-strength*)
+				(princ "A brigand cuts your arm with his whip, taking off 2 strength points! ")
+				(decf *player-strength* 2)))))
+			
