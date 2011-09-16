@@ -26,7 +26,11 @@
 		(map 'vector
 			(lambda (x) (funcall (nth (random (length *monster-builders*)) *monster-builders*)))
 			(make-array *monster-num*))))
-	
+
+;; UTILITY
+(defun randval (n)
+	(1+ (random (max 1 n))))
+			
 ;; GAME LOOP		
 (defun game-loop ()
 	(unless (or (player-dead) (monsters-dead))
@@ -51,7 +55,7 @@
 
 ;; GAME STATE
 (defun player-dead ()
-	(<= *player-health* 0)
+	(<= *player-health* 0))
 	
 (defun monster-dead (m)
 	(<= (monster-health m) 0))
