@@ -86,7 +86,7 @@
 ;; Finding nodes		
 (defun neighbors (node edge-alist)
 	(mapcar #'car (cdr (assoc node edge-alist))))
-	
+
 (defun within-one (node target edge-alist)
 	(member target (neighbors node edge-alist)))
 	
@@ -95,9 +95,12 @@
 		(some (lambda (neighbor-node) (within-one neighbor-node target edge-alist))
 			  (neighbors node edge-alist))))
 
-;;(defun within-n (node target edge-alist)
-;;	(or (within-one node target edge-alist)
-;;		(
+(defun within-n (node target edge-alist n)
+	(cond 	((< n 0) nil)
+			((eq node target) t)
+			(t (some (lambda (neighbor-node) 
+				(within-n neighbor-node target edge-alist (- n 1)))
+				(neighbors node edge-alist)))))
 			  
 (defun find-empty-node ()
 	(let ((x (random-node)))
@@ -186,7 +189,7 @@
 		(cond ((member 'cops edge) (princ "You ran into the cops. Game over."))
 			  ((member 'wumpus node) (if charging
 										 (princ "You found the Wumpus!")
-										 (princ "You ran inot the Wumpus!")))
+										 (princ "You ran into the Wumpus!")))
 			  (charging (princ "You wasted your last bullet. Game over."))
 			  (has-worm (let ((new-pos (random-node)))
 							(princ "You ran into the Glow Worm Gang! You're now at ")
