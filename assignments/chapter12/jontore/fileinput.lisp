@@ -1,0 +1,12 @@
+(defun read-file () (with-open-file (my-stream "test.txt" :direction :input)
+     (do ((line (read-line my-stream nil)
+                (read-line my-stream nil)))
+          ((null line))
+     (print line)))
+)
+
+(defun read-file2 (name) (with-open-file (my-stream name :direction :input)
+        (loop for line = (read-line my-stream nil 'foo)
+            until (eq line 'foo)
+            do (print line)))
+)
