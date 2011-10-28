@@ -7,8 +7,7 @@
 
 (defun parse-http-code (char1 char2)
 	(parse-integer (coerce (list char1 char2) 'string) :radix 16 :junk-allowed t))
-		
-			
+				
 (defun decode-param (input-string)
 	(labels ((f (lst)
 				(when lst
@@ -25,7 +24,7 @@
 		(cond 	(i1 (cons (cons (intern (string-upcase (subseq input-string 0 i1)))
 								(decode-param (subseq input-string (1+ i1) i2)))
 						  (and i2 (parse-params (subseq input-string (1+ i2))))))
-				((equal s "") nil)
+				((equal input-string "") nil)
 				(t input-string))))
 				
 ;; request header parsing
