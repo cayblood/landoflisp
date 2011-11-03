@@ -1,6 +1,6 @@
 (defparameter *num-players* 2)
 (defparameter *max-dice* 3)
-(defparameter *board-size* 2)
+(defparameter *board-size* 3)
 (defparameter *board-hexnum* (* *board-size* *board-size*))
 
 ;; Board creation
@@ -24,6 +24,12 @@
 						do (format t "~a-~a " (get-ascii-from-player-number (first hex))
 											  (second hex))))))
 ;; Rules handling
+(let ((old-game-tree (symbol-function 'game-tree))
+	  (previous (make-hash-table :test #'equalp)))
+	(defun game-tree (&rest rest)
+		(or (gethash rest previous)
+			(setf (gethash rest previous)(apply old-game-tree rest)))))
+
 (defun game-tree (board player spare-dice first-move)
 	(list player
 		  board
@@ -62,6 +68,12 @@
 				(loop for n below *board-hexnum*
 					  collect n))))
 
+(let ((old-neighbord (symbol-function 'neighbors))
+	  (previous (make-hash-table)))
+	(defun neighbors (pos)
+		(or (gethash pos previous)
+			(setf (gethash pos previous)(funcall old-neighbors pos)))))
+					  
 (defun neighbors (pos)
 	(let ((up (- pos *board-size*))
 		  (down (+ pos *board-size*)))
@@ -72,25 +84,32 @@
 									(list (1+ pos) (1+ down))))
 					when (and (>= p 0) (< p *board-hexnum*))
 					collect p)))
+
+
 					
 (defun board-attack (board player src dst dice)
-	(board-array (loop for pos
-					   for hex across board
-					   collect (cond ((eq pos src)(list player 1))
-									 ((eq pos dst)(list player (1- dice)))
-									 (t hex)))))
+	(board-array 
+		(loop for pos
+			  for hex across board
+		      collect (cond ((eq pos src)(list player 1))
+							((eq pos dst)(list player (1- dice)))
+							(t hex)))))
 									 
 (defun add-new-dice (board player spare-dice)
-	(labels ((f (lst n)
-				(cond ((null lst) nil)
-					  ((zerop n) lst)
-					  (t (let ((current-player (caar lst))
-							   (current-dice (cadar lst)))
-							(if (and (eq current-player player) (< current-dice *max-dice*))
-								(cons (list current-player (1+ current-dice))
-									  (f (cdr lst) (1- n)))
-								(cons (car lst) (f (cdr lst) n))))))))
-		(board-array (f (coerce board 'list) spare-dice))))
+	(labels ((f (lst n acc)
+				(cond ((zerop n) 	(append (reverse acc) lst))
+					  ((null lst) 	(reverse acc))					  
+					  (t 			(let ((current-player (caar lst))
+										  (current-dice (cadar lst)))
+										(if (and (eq current-player player) 
+												 (< current-dice *max-dice*))
+											(f 	(cdr lst)
+												(1- n)
+												(cons (list current-player (1+ current-dice)) acc))
+											(f 	(cdr lst) 
+												n 
+												(cons (car lst) acc))))))))
+		(board-array (f (coerce board 'list) spare-dice ()))))
 		
 ;; Human interaction
 (defun play-vs-human (tree)
@@ -118,7 +137,8 @@
 						(princ "end turn"))))
 		(fresh-line)
 		(cadr (nth (1- (read)) moves))))
-		
+
+;; Victory!!		
 (defun winners (board)
 	(let* ((tally (loop for hex across board
 						collect (car hex)))
@@ -134,3 +154,49 @@
 		(if (> (length w) 1)
 			(format t "The game is a tie between ~a" (mapcar #'get-ascii-from-player-number w))
 			(format t "The winner is ~a" (get-ascii-from-player-number (car w))))))
+
+;; Play analysis
+(let ((old-rate-position (symbol-function 'rate-position))
+	  (previous (make-hash-table)))
+	(defun rate-position (tree player)
+		(let ((tab (gethash player previous)))
+			(unless tab
+				(setf tab (setf (gethash player previous)(make-hash-table))))
+				(or (gethash tree tab)
+					(setf (gethash tree tab)(funcall old-rate-position tree player))))))
+			
+(defun rate-position (tree player)
+	(let ((moves (caddr tree)))
+		(if moves
+			(get-best-or-worst-move tree player)
+			(get-rating-for-no-moves tree player))))
+					
+(defun get-best-or-worst-move (tree player)
+	(apply 
+		(if (eq (car tree) player)
+			#'max
+			#'min)
+		(get-ratings tree player)))
+
+(defun get-rating-for-no-moves (tree player)
+	(let ((w (winners (cadr tree))))
+		(if (member player w)
+			(/ 1 (length w))
+			0)))
+			
+(defun get-ratings (tree player)
+	(mapcar (lambda (move)(rate-position (cadr move) player))
+		(caddr tree)))
+
+;; AI : "would you like to play a game?"
+(defun handle-computer (tree)
+	(let ((ratings (get-ratings tree (car tree))))
+		(cadr (nth (position (apply #'max ratings) ratings)(caddr tree)))))
+		
+(defun play-vs-computer (tree)
+	(print-info tree)
+	(cond 
+		((null (caddr tree))	(announce-winner (cadr tree)))
+		((zerop (car tree))		(play-vs-computer (handle-human tree)))
+		(t						(play-vs-computer (handle-computer tree)))))
+
