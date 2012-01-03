@@ -133,5 +133,3 @@
 				(progn (setf *bucket-filled* t)
 					   '(the bucket is now full of water))
 				'(the water level is too low to reach.)))
-	
-	
